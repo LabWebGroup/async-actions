@@ -6,27 +6,27 @@ if (!current_user_can('manage_options')) {
 }
 
 global $wpdb;
-$table     = $wpdb->prefix . 'lab_async_queue';
-$nonce_key = 'lab_async_queue_manage';
+$table     = $wpdb->prefix . 'async_queue';
+$nonce_key = 'async_queue_manage';
 $page_url  = admin_url('admin.php?page=async-actions');
 
 // ── Handle POST ────────────────────────────────────────────────────────────────
-if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['lab_async_action'])) {
+if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['async_action'])) {
     check_admin_referer($nonce_key);
 
-    $act = sanitize_key($_POST['lab_async_action'] ?? '');
+    $act = sanitize_key($_POST['async_action'] ?? '');
     $msg = '';
 
     switch ($act) {
 
         case 'process_now':
-            lab_async_process_queue();
+            async_process_queue();
             $msg = 'Next pending job processed (if any was available).';
             break;
 
         case 'toggle_cron':
-            $was_paused = (bool) get_option('lab_async_cron_paused', false);
-            update_option('lab_async_cron_paused', !$was_paused);
+            $was_paused = (bool) get_option('async_cron_paused', false);
+            update_option('async_cron_paused', !$was_paused);
             $msg = $was_paused
                 ? 'Cron worker <strong>resumed</strong>.'
                 : 'Cron worker <strong>paused</strong>.';
@@ -82,7 +82,7 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['lab_async_action'])) 
                 $data = json_decode($job->payload, true) ?? [];
 
                 try {
-                    do_action("lab_async_queue_task_{$job->task}", $data);
+                    do_action("async_queue_task_{$job->task}", $data);
                     $wpdb->update($table, ['status' => 'done'], ['id' => $job->id], ['%s'], ['%d']);
                     $processed++;
                 } catch (Throwable $e) {
@@ -98,8 +98,8 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['lab_async_action'])) 
         case 'save_worker_settings':
             $batch_size  = max(1, (int) ($_POST['batch_size']  ?? 10));
             $max_runtime = max(1, (int) ($_POST['max_runtime'] ?? 30));
-            update_option('lab_async_batch_size',  $batch_size);
-            update_option('lab_async_max_runtime', $max_runtime);
+            update_option('async_batch_size',  $batch_size);
+            update_option('async_max_runtime', $max_runtime);
             $msg = 'Worker settings saved.';
             break;
 
@@ -223,11 +223,11 @@ $jobs = $filter
     );
 
 // ── Cron info ───────────────────────────────────────────────────────────────────
-$cron_paused  = (bool) get_option('lab_async_cron_paused', false);
-$opt_batch    = (int)  get_option('lab_async_batch_size',  10);
-$opt_runtime  = (int)  get_option('lab_async_max_runtime', 20);
-$next_run    = wp_next_scheduled('lab_async_worker');
-$secret      = defined('LAB_ASYNC_SECRET') ? LAB_ASYNC_SECRET : (string) get_option('lab_async_secret', '');
+$cron_paused  = (bool) get_option('async_cron_paused', false);
+$opt_batch    = (int)  get_option('async_batch_size',  10);
+$opt_runtime  = (int)  get_option('async_max_runtime', 20);
+$next_run    = wp_next_scheduled('async_worker');
+$secret      = get_option('async_secret_key', '');
 $proc_url    = rest_url('async-task/v1/process-queue');
 $curl_cmd    = '* * * * * curl -s -o /dev/null -X POST "' . esc_url_raw($proc_url) . '" -H "X-Lab-Async-Secret: ' . esc_html($secret) . '"';
 
@@ -428,7 +428,7 @@ $status_meta = [
     <!-- Process Now -->
     <form method="POST" style="display:inline; margin-left:8px;">
         <?php wp_nonce_field($nonce_key); ?>
-        <input type="hidden" name="lab_async_action" value="process_now">
+        <input type="hidden" name="async_action" value="process_now">
         <button type="submit" class="page-title-action" style="font-size:13px; padding:3px 12px;">
             &#9654;&nbsp; Process Next Job
         </button>
@@ -477,7 +477,7 @@ $status_meta = [
     <form method="POST" id="lat-queue-form">
         <?php wp_nonce_field($nonce_key); ?>
         <!-- Filled by JS for individual row actions -->
-        <input type="hidden" name="lab_async_action" id="lat-form-action" value="">
+        <input type="hidden" name="async_action" id="lat-form-action" value="">
         <input type="hidden" name="job_id"           id="lat-form-job-id" value="">
         <input type="hidden" name="new_status"       id="lat-form-new-status" value="">
         <input type="hidden" name="bulk_new_status"  id="lat-bulk-status-val" value="">
@@ -486,7 +486,7 @@ $status_meta = [
         <div class="tablenav top">
             <div class="alignleft actions bulkactions">
                 <button type="submit"
-                        name="lab_async_action"
+                        name="async_action"
                         value="bulk_delete"
                         class="button"
                         id="lat-bulk-delete-btn"
@@ -497,7 +497,7 @@ $status_meta = [
                 <span class="lat-bulk-sep"></span>
 
                 <button type="submit"
-                        name="lab_async_action"
+                        name="async_action"
                         value="bulk_process"
                         class="button"
                         onclick="return latConfirmBulkProcess()">
@@ -513,7 +513,7 @@ $status_meta = [
                     <?php endforeach; ?>
                 </select>
                 <button type="submit"
-                        name="lab_async_action"
+                        name="async_action"
                         value="bulk_change_status"
                         class="button"
                         onclick="return latConfirmBulkStatus()">
@@ -614,7 +614,7 @@ $status_meta = [
             <div class="alignleft actions bulkactions">
 
                 <button type="submit"
-                        name="lab_async_action"
+                        name="async_action"
                         value="bulk_delete"
                         class="button"
                         onclick="return latConfirmBulk()">
@@ -624,7 +624,7 @@ $status_meta = [
                 <span class="lat-bulk-sep"></span>
 
                 <button type="submit"
-                        name="lab_async_action"
+                        name="async_action"
                         value="bulk_process"
                         class="button"
                         onclick="return latConfirmBulkProcess()">
@@ -640,7 +640,7 @@ $status_meta = [
                     <?php endforeach; ?>
                 </select>
                 <button type="submit"
-                        name="lab_async_action"
+                        name="async_action"
                         value="bulk_change_status"
                         class="button"
                         onclick="return latConfirmBulkStatus()">
@@ -670,7 +670,7 @@ $status_meta = [
 
                 <form method="POST">
                     <?php wp_nonce_field($nonce_key); ?>
-                    <input type="hidden" name="lab_async_action" value="toggle_cron">
+                    <input type="hidden" name="async_action" value="toggle_cron">
                     <?php if ($cron_paused): ?>
                     <button type="submit" class="button button-primary">&#9654;&nbsp; Resume Worker</button>
                     <p class="description" style="margin-top:6px;">The queue worker is paused. Jobs accumulate but are not processed automatically.</p>
@@ -716,7 +716,7 @@ $status_meta = [
                 <p class="lat-cron-panel-title" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#646970; margin:0 0 16px;">Worker Parameters</p>
                 <form method="POST" style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-end;">
                     <?php wp_nonce_field($nonce_key); ?>
-                    <input type="hidden" name="lab_async_action" value="save_worker_settings">
+                    <input type="hidden" name="async_action" value="save_worker_settings">
                     <label style="display:flex; flex-direction:column; gap:4px; font-size:13px; font-weight:600;">
                         Batch Size
                         <input type="number" name="batch_size" value="<?php echo esc_attr($opt_batch); ?>"

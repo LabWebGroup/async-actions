@@ -10,7 +10,7 @@ defined('ABSPATH') || exit;
 */
 
 
-// add_action('lab_async_task_test', function ($data) {
+// add_action('async_task_test', function ($data) {
 //     sleep(15); // simulate a long-running task
 
 //     $upload_dir = wp_upload_dir();
@@ -20,7 +20,7 @@ defined('ABSPATH') || exit;
 // }, 10, 1);
 
 
-add_action('lab_async_queue_task_test', function ($data) {
+add_action('async_queue_task_test', function ($data) {
 
     sleep(15); // simulate a long-running task
 
@@ -48,11 +48,11 @@ add_action('template_redirect', function () {
         return;
     }
 
-    // lab_async_dispatch('test', [
+    // async_dispatch('test', [
     //     'email' => 'test@example.com',
     // ]);
 
-    lab_async_queue_dispatch('test', [
+    async_queue_dispatch('test', [
         'email' => 'test@example.com',
     ]);
 });

@@ -3,10 +3,10 @@
 defined('ABSPATH') || exit;
 
 
-function lab_async_setup_db() {
+function async_setup_db() {
     global $wpdb;
 
-    $table = $wpdb->prefix . 'lab_async_queue';
+    $table = $wpdb->prefix . 'async_queue';
     $charset = $wpdb->get_charset_collate();
 
     $sql = "CREATE TABLE $table (

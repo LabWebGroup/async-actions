@@ -6,7 +6,7 @@
 | Tags | async, background, queue, jobs, cron |
 | Requires at least | 5.3 |
 | Tested up to | 6.8 |
-| Stable tag | 1.0.0 |
+| Stable tag | 1.0.8 |
 | License | GPLv2 or later |
 | License URI | https://www.gnu.org/licenses/gpl-2.0.html |
 
@@ -17,29 +17,29 @@ Lightweight background job queue and async task dispatcher for WordPress.
 ![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-21759B?logo=wordpress&logoColor=white)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4?logo=php&logoColor=white)
 ![License](https://img.shields.io/badge/License-GPL%20v2%2B-blue)
-![Version](https://img.shields.io/badge/Version-1.0.0-green)
+![Version](https://img.shields.io/badge/Version-1.0.8-green)
 
 ## How to Use
 
 There are two ways to run tasks in the background:
 
-1. **`lab_async_dispatch()`** — fires the task immediately in a non-blocking HTTP request (fire-and-forget).
-2. **`lab_async_queue_dispatch()`** — adds the task to a persistent database queue, processed by WP-Cron every 30 seconds (supports retries).
+1. **`async_dispatch()`** — fires the task immediately in a non-blocking HTTP request (fire-and-forget).
+2. **`async_queue_dispatch()`** — adds the task to a persistent database queue, processed by WP-Cron every 30 seconds (supports retries).
 
 ---
 
 ### Immediate Dispatch
 
-Register a handler using the `lab_async_task_{name}` hook, then dispatch it anywhere.
+Register a handler using the `async_task_{name}` hook, then dispatch it anywhere.
 
 ```php
 // Register the task handler
-add_action('lab_async_task_send_email', function ($data) {
+add_action('async_task_send_email', function ($data) {
     wp_mail($data['email'], 'Hello', 'Welcome!');
 });
 
 // Dispatch the task (non-blocking, runs immediately in the background)
-lab_async_dispatch('send_email', [
+async_dispatch('send_email', [
     'email' => 'john@example.com',
 ]);
 ```
@@ -48,16 +48,16 @@ lab_async_dispatch('send_email', [
 
 ### Queue Dispatch
 
-Register a handler using the `lab_async_queue_task_{name}` hook. Jobs are processed in batches by WP-Cron and automatically retried (up to 3 attempts) on failure.
+Register a handler using the `async_queue_task_{name}` hook. Jobs are processed in batches by WP-Cron and automatically retried (up to 3 attempts) on failure.
 
 ```php
 // Register the queue task handler
-add_action('lab_async_queue_task_send_email', function ($data) {
+add_action('async_queue_task_send_email', function ($data) {
     wp_mail($data['email'], 'Hello', 'Welcome!');
 });
 
 // Add the task to the queue
-lab_async_queue_dispatch('send_email', [
+async_queue_dispatch('send_email', [
     'email' => 'john@example.com',
 ]);
 ```
@@ -66,10 +66,10 @@ lab_async_queue_dispatch('send_email', [
 
 ### Handling Failed Jobs
 
-Use the `lab_async_queue_job_failed` action to log or react when a queued job fails after all retry attempts.
+Use the `async_queue_job_failed` action to log or react when a queued job fails after all retry attempts.
 
 ```php
-add_action('lab_async_queue_job_failed', function ($job, $exception) {
+add_action('async_queue_job_failed', function ($job, $exception) {
     error_log("Job {$job->task} failed: " . $exception->getMessage());
 }, 10, 2);
 ```
@@ -80,5 +80,5 @@ add_action('lab_async_queue_job_failed', function ($job, $exception) {
 
 | Filter | Default | Description |
 |---|---|---|
-| `lab_async_batch_size` | `10` | Number of queue jobs processed per cron run. |
-| `lab_async_max_runtime` | `30` | Max seconds the queue worker runs per cron cycle. |
+| `async_batch_size` | `10` | Number of queue jobs processed per cron run. |
+| `async_max_runtime` | `30` | Max seconds the queue worker runs per cron cycle. |

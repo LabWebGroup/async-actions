@@ -111,8 +111,8 @@ defined('ABSPATH') || exit;
 
 <div class="wrap lat-docs">
 
-    <h1>Lab Async Actions &mdash; Documentation</h1>
-    <p style="color:#646970; font-size:14px;">Version 1.0.0 &nbsp;&bull;&nbsp; Lightweight async task dispatcher for WordPress</p>
+    <h1>Async Actions &mdash; Documentation</h1>
+    <p style="color:#646970; font-size:14px;">Version 1.0.8 &nbsp;&bull;&nbsp; Lightweight async task dispatcher for WordPress</p>
 
     <div class="lat-docs-layout">
 
@@ -137,7 +137,7 @@ defined('ABSPATH') || exit;
     <!-- OVERVIEW -->
     <h2 id="overview">1. Overview</h2>
     <p>
-        <strong>Lab Async Actions</strong> gives you two ways to run code outside the current HTTP request in WordPress,
+        <strong>Async Actions</strong> gives you two ways to run code outside the current HTTP request in WordPress,
         without relying on third-party services or complex queuing infrastructure:
     </p>
     <ul>
@@ -150,16 +150,16 @@ defined('ABSPATH') || exit;
 
     <h3>Direct Async</h3>
     <p>
-        When you call <code>lab_async_dispatch()</code>, the plugin makes a non-blocking <code>wp_remote_post()</code>
+        When you call <code>async_dispatch()</code>, the plugin makes a non-blocking <code>wp_remote_post()</code>
         to the internal REST endpoint <code>POST /wp-json/async-task/v1/process</code>.
         The current request returns immediately; WordPress processes the task in a separate PHP process.
     </p>
 
     <h3>Queue</h3>
     <p>
-        When you call <code>lab_async_queue_dispatch()</code>, a row is inserted into the
-        <code><?php echo esc_html($GLOBALS['wpdb']->prefix); ?>lab_async_queue</code> table with <code>status = 'pending'</code>.
-        A WP-Cron event (<code>lab_async_worker</code>) fires every minute, picks up the oldest pending job,
+        When you call <code>async_queue_dispatch()</code>, a row is inserted into the
+        <code><?php echo esc_html($GLOBALS['wpdb']->prefix); ?>async_queue</code> table with <code>status = 'pending'</code>.
+        A WP-Cron event (<code>async_worker</code>) fires every minute, picks up the oldest pending job,
         executes it, and marks it <code>done</code>. Failed jobs are retried up to 3 times with a 30-second delay.
     </p>
 
@@ -168,8 +168,8 @@ defined('ABSPATH') || exit;
     <span class="lat-section-label">Runs immediately</span>
 
     <h3>Step 1 — Register a task callback</h3>
-    <p>Hook into <code>lab_async_task_{task_name}</code> anywhere in your theme or plugin:</p>
-    <pre><code>add_action( 'lab_async_task_send_email', function ( array $data ) {
+    <p>Hook into <code>async_task_{task_name}</code> anywhere in your theme or plugin:</p>
+    <pre><code>add_action( 'async_task_send_email', function ( array $data ) {
     wp_mail(
         $data['email'],
         'Subject',
@@ -178,7 +178,7 @@ defined('ABSPATH') || exit;
 } );</code></pre>
 
     <h3>Step 2 — Dispatch the task</h3>
-    <pre><code>lab_async_dispatch(
+    <pre><code>async_dispatch(
     'send_email',          // task name (must match the hook suffix)
     [
         'email' => 'john@example.com',
@@ -194,14 +194,14 @@ defined('ABSPATH') || exit;
     <span class="lat-section-label">Runs via WP-Cron (every minute)</span>
 
     <h3>Step 1 — Register a queue task callback</h3>
-    <p>Hook into <code>lab_async_queue_task_{task_name}</code>:</p>
-    <pre><code>add_action( 'lab_async_queue_task_resize_image', function ( array $data ) {
+    <p>Hook into <code>async_queue_task_{task_name}</code>:</p>
+    <pre><code>add_action( 'async_queue_task_resize_image', function ( array $data ) {
     // heavy processing here
     generate_thumbnail( $data['attachment_id'] );
 } );</code></pre>
 
     <h3>Step 2 — Push a job to the queue</h3>
-    <pre><code>lab_async_queue_dispatch(
+    <pre><code>async_queue_dispatch(
     'resize_image',
     [
         'attachment_id' => 42,
@@ -228,18 +228,18 @@ defined('ABSPATH') || exit;
     <!-- API REFERENCE -->
     <h2 id="api-reference">5. API Reference</h2>
 
-    <h3><code>lab_async_dispatch( $task, $data )</code> <span class="lat-badge lat-badge-fn">function</span></h3>
+    <h3><code>async_dispatch( $task, $data )</code> <span class="lat-badge lat-badge-fn">function</span></h3>
     <table class="lat-table">
         <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
-        <tr><td><code>$task</code></td><td>string</td><td>Task name. Triggers hook <code>lab_async_task_{task}</code>.</td></tr>
+        <tr><td><code>$task</code></td><td>string</td><td>Task name. Triggers hook <code>async_task_{task}</code>.</td></tr>
         <tr><td><code>$data</code></td><td>array</td><td>Arbitrary payload passed to the hook callback.</td></tr>
     </table>
     <p>Fires a non-blocking internal REST request. Returns <code>void</code>.</p>
 
-    <h3><code>lab_async_queue_dispatch( $task, $data )</code> <span class="lat-badge lat-badge-fn">function</span></h3>
+    <h3><code>async_queue_dispatch( $task, $data )</code> <span class="lat-badge lat-badge-fn">function</span></h3>
     <table class="lat-table">
         <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
-        <tr><td><code>$task</code></td><td>string</td><td>Task name. Triggers hook <code>lab_async_queue_task_{task}</code>.</td></tr>
+        <tr><td><code>$task</code></td><td>string</td><td>Task name. Triggers hook <code>async_queue_task_{task}</code>.</td></tr>
         <tr><td><code>$data</code></td><td>array</td><td>Arbitrary payload serialized as JSON in the queue row.</td></tr>
     </table>
     <p>Inserts a pending job into the database queue. Returns <code>void</code>.</p>
@@ -250,19 +250,19 @@ defined('ABSPATH') || exit;
         <tr><td><code>/wp-json/async-task/v1/process</code></td><td>Execute a single direct task.</td></tr>
         <tr><td><code>/wp-json/async-task/v1/process-queue</code></td><td>Process the next pending queue job.</td></tr>
     </table>
-    <p>Both endpoints require the <code>X-Lab-Async-Secret</code> header. They are intended for internal use only.</p>
+    <p>Both endpoints require the <code>X-Async-Secret</code> header. They are intended for internal use only.</p>
 
     <h3>Action Hooks <span class="lat-badge lat-badge-hook">hooks</span></h3>
     <table class="lat-table">
         <tr><th>Hook</th><th>When fired</th></tr>
-        <tr><td><code>lab_async_task_{name}</code></td><td>During direct-async processing. Receives <code>$data</code> array.</td></tr>
-        <tr><td><code>lab_async_queue_task_{name}</code></td><td>During queue processing. Receives <code>$data</code> array.</td></tr>
-        <tr><td><code>lab_async_worker</code></td><td>WP-Cron event; fires every minute to process the queue.</td></tr>
+        <tr><td><code>async_task_{name}</code></td><td>During direct-async processing. Receives <code>$data</code> array.</td></tr>
+        <tr><td><code>async_queue_task_{name}</code></td><td>During queue processing. Receives <code>$data</code> array.</td></tr>
+        <tr><td><code>async_worker</code></td><td>WP-Cron event; fires every minute to process the queue.</td></tr>
     </table>
 
     <!-- DATABASE SCHEMA -->
     <h2 id="db-schema">6. Database Schema</h2>
-    <p>Table: <code><?php echo esc_html($GLOBALS['wpdb']->prefix); ?>lab_async_queue</code> &mdash; created on plugin activation.</p>
+    <p>Table: <code><?php echo esc_html($GLOBALS['wpdb']->prefix); ?>async_queue</code> &mdash; created on plugin activation.</p>
     <table class="lat-table">
         <tr><th>Column</th><th>Type</th><th>Description</th></tr>
         <tr><td><code>id</code></td><td>BIGINT UNSIGNED</td><td>Auto-increment primary key.</td></tr>
@@ -277,13 +277,13 @@ defined('ABSPATH') || exit;
     <!-- SECURITY -->
     <h2 id="security">7. Security</h2>
     <p>
-        The REST endpoints are protected by a 64-character hex secret key (<code>LAB_ASYNC_SECRET</code>)
+        The REST endpoints are protected by a 64-character hex secret key (<code><?php echo esc_html(async_secret()); ?></code>)
         generated on activation and stored in WordPress options. Every internal request passes this key
-        in the <code>X-Lab-Async-Secret</code> header; the permission callback uses <code>hash_equals()</code>
+        in the <code>X-Async-Secret</code> header; the permission callback uses <code>hash_equals()</code>
         to prevent timing attacks.
     </p>
     <div class="lat-notice lat-warn">
-        <strong>Note:</strong> The secret is stored in <code>wp_options</code>. Make sure your database is not publicly accessible and that your <code>wp-config.php</code> credentials are kept private.
+        <strong>Note:</strong> The secret key is stored in <code>wp_options</code>. Make sure your database is not publicly accessible and that your <code>wp-config.php</code> credentials are kept private.
     </div>
 
     </div><!-- .lat-docs-main -->

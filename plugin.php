@@ -3,7 +3,7 @@
  * Plugin Name: Async Actions
  * Plugin URI: https://labweb.digital/
  * Description: Lightweight background job queue and async task dispatcher for WordPress.
- * Version: 1.0.0
+ * Version: 1.0.8
  * Author: Labweb
  * Author URI: https://labweb.digital/
  * License: GPL v2 or later
@@ -36,16 +36,16 @@ require_once __DIR__ . '/db.php';
 /**
  * Create the database table on plugin activation.
  */
-register_activation_hook(__FILE__, 'lab_async_setup_db');
+register_activation_hook(__FILE__, 'async_setup_db');
 
 /**
  * Generate a secret key for internal requests.
  */
 register_activation_hook(__FILE__, function () {
 
-    if (!get_option('lab_async_secret')) {
+    if (!get_option('async_secret_key')) {
         add_option(
-            'lab_async_secret',
+            'async_secret_key',
             bin2hex(random_bytes(32))
         );
     }
@@ -55,8 +55,8 @@ register_activation_hook(__FILE__, function () {
 /**
  * Define the secret key constant.
  */
-function lab_async_secret(): string {
-    return (string) get_option('lab_async_secret');
+function async_secret(): string {
+    return (string) get_option('async_secret_key');
 }
 
 /**
@@ -66,14 +66,14 @@ add_action('rest_api_init', function () {
 
     register_rest_route('async-task/v1', '/process', [
         'methods'             => 'POST',
-        'callback'            => 'lab_async_process',
-        'permission_callback' => 'lab_async_permission',
+        'callback'            => 'async_process',
+        'permission_callback' => 'async_permission',
     ]);
 
     register_rest_route('async-task/v1', '/process-queue', [
         'methods'             => 'POST',
-        'callback'            => 'lab_async_process',
-        'permission_callback' => 'lab_async_permission',
+        'callback'            => 'async_process_queue',
+        'permission_callback' => 'async_permission',
     ]);
 
 });
@@ -81,11 +81,11 @@ add_action('rest_api_init', function () {
 /**
  * Authenticate internal requests.
  */
-function lab_async_permission(WP_REST_Request $request): bool
+function async_permission(WP_REST_Request $request): bool
 {
     return hash_equals(
-        lab_async_secret(),
-        (string) $request->get_header('X-Lab-Async-Secret')
+        async_secret(),
+        (string) $request->get_header('X-Async-Secret')
     );
 }
 
@@ -93,7 +93,7 @@ function lab_async_permission(WP_REST_Request $request): bool
  * Worker endpoint
  * Execute an async task.
  */
-function lab_async_process(WP_REST_Request $request)
+function async_process(WP_REST_Request $request)
 {
     $task = sanitize_key($request->get_param('task'));
     $data = (array) $request->get_param('data');
@@ -106,7 +106,7 @@ function lab_async_process(WP_REST_Request $request)
         );
     }
 
-    $hook = "lab_async_task_{$task}";
+    $hook = "async_task_{$task}";
 
     if (!has_action($hook)) {
         return new WP_Error(
@@ -136,67 +136,16 @@ function lab_async_process(WP_REST_Request $request)
 }
 
 /**
- * Worker endpoint
  * Process the async queue.
  */
-// function lab_async_process_queue()
-// {
-//     global $wpdb;
-
-//     $table = $wpdb->prefix . 'lab_async_queue';
-
-//     $job = $wpdb->get_row("
-//         SELECT * FROM $table
-//         WHERE status = 'pending'
-//         AND (available_at IS NULL OR available_at <= NOW())
-//         ORDER BY id ASC
-//         LIMIT 1
-//     ");
-
-//     if (!$job) {
-//         return;
-//     }
-
-//     // mark as processing
-//     $wpdb->update($table, [
-//         'status' => 'processing',
-//         'attempts' => $job->attempts + 1,
-//     ], [
-//         'id' => $job->id
-//     ]);
-
-//     $task = $job->task;
-//     $data = json_decode($job->payload, true);
-
-//     try {
-//         do_action("lab_async_queue_task_{$task}", $data);
-
-//         $wpdb->update($table, [
-//             'status' => 'done',
-//         ], [
-//             'id' => $job->id
-//         ]);
-
-//     } catch (Throwable $e) {
-//         $attempts = $job->attempts + 1;
-
-//         $wpdb->update($table, [
-//             'attempts'     => $attempts,
-//             'status'       => ($attempts >= 3) ? 'failed' : 'pending',
-//             'available_at' => date('Y-m-d H:i:s', time() + 30),
-//         ], [
-//             'id' => $job->id
-//         ]);
-//     }
-// }
-function lab_async_process_queue(): void
+function async_process_queue(): void
 {
     global $wpdb;
 
-    $table = $wpdb->prefix . 'lab_async_queue';
+    $table = $wpdb->prefix . 'async_queue';
 
-    $batch_size = (int) apply_filters('lab_async_batch_size', 10);
-    $max_runtime = (float) apply_filters('lab_async_max_runtime', 20);
+    $batch_size = (int) apply_filters('async_batch_size', 10);
+    $max_runtime = (float) apply_filters('async_max_runtime', 20);
 
     $start = microtime(true);
 
@@ -246,7 +195,7 @@ function lab_async_process_queue(): void
             $data = json_decode($job->payload, true);
 
             do_action(
-                "lab_async_queue_task_{$job->task}",
+                "async_queue_task_{$job->task}",
                 $data
             );
 
@@ -278,7 +227,7 @@ function lab_async_process_queue(): void
              * Allow plugins to log or react to failed jobs.
              */
             do_action(
-                'lab_async_queue_job_failed',
+                'async_queue_job_failed',
                 $job,
                 $e
             );
@@ -289,7 +238,7 @@ function lab_async_process_queue(): void
 /**
  * Dispatch an async task.
  */
-function lab_async_dispatch(string $task, array $data = []): void
+function async_dispatch(string $task, array $data = []): void
 {
     wp_remote_post(
         rest_url('async-task/v1/process'),
@@ -298,7 +247,7 @@ function lab_async_dispatch(string $task, array $data = []): void
             'timeout'  => 0.01,
 
             'headers' => [
-                'X-Lab-Async-Secret' => lab_async_secret(),
+                'X-Async-Secret' => async_secret(),
                 'Content-Type'       => 'application/json',
                 'Accept'             => 'application/json',
             ],
@@ -314,11 +263,11 @@ function lab_async_dispatch(string $task, array $data = []): void
 /**
  * Dispatch an async task to the queue.
  */
-function lab_async_queue_dispatch(string $task, array $data = []): void
+function async_queue_dispatch(string $task, array $data = []): void
 {
     global $wpdb;
 
-    $table = $wpdb->prefix . 'lab_async_queue';
+    $table = $wpdb->prefix . 'async_queue';
 
     $wpdb->insert($table, [
         'task'        => sanitize_key($task),
@@ -347,14 +296,14 @@ add_filter('cron_schedules', function ($schedules) {
  * if it was ever cleared (deactivation, cron cleanup, etc.).
  */
 add_action('init', function () {
-    if (!wp_next_scheduled('lab_async_worker')) {
-        wp_schedule_event(time(), 'minute', 'lab_async_worker');
+    if (!wp_next_scheduled('async_worker')) {
+        wp_schedule_event(time(), 'minute', 'async_worker');
     }
 });
 
-add_action('lab_async_worker', function () {
-    if (!get_option('lab_async_cron_paused', false)) {
-        lab_async_process_queue();
+add_action('async_worker', function () {
+    if (!get_option('async_cron_paused', false)) {
+        async_process_queue();
     }
 });
 
@@ -363,10 +312,10 @@ add_action('lab_async_worker', function () {
  */
 register_deactivation_hook(__FILE__, function () {
 
-    $timestamp = wp_next_scheduled('lab_async_worker');
+    $timestamp = wp_next_scheduled('async_worker');
 
     if ($timestamp) {
-        wp_unschedule_event($timestamp, 'lab_async_worker');
+        wp_unschedule_event($timestamp, 'async_worker');
     }
 
 });
@@ -374,18 +323,18 @@ register_deactivation_hook(__FILE__, function () {
 /**
  * Pause the worker cron job.
  */
-add_filter('lab_async_batch_size', function () {
-    return get_option('lab_async_cron_paused', false) ? 0 : (int) get_option('lab_async_batch_size', 10);
+add_filter('async_batch_size', function () {
+    return get_option('async_cron_paused', false) ? 0 : (int) get_option('async_batch_size', 10);
 });
 
-add_filter('lab_async_max_runtime', function () {
-    return get_option('lab_async_cron_paused', false) ? 0 : (int) get_option('lab_async_max_runtime', 30);
+add_filter('async_max_runtime', function () {
+    return get_option('async_cron_paused', false) ? 0 : (int) get_option('async_max_runtime', 30);
 });
 
 
 // task example:
 /*
-add_action('lab_async_task_send_email', function ($data) {
+add_action('async_task_send_email', function ($data) {
     wp_mail(
         $data['email'],
         'Hello',
@@ -396,7 +345,7 @@ add_action('lab_async_task_send_email', function ($data) {
 
 // queue task example:
 /*
-add_action('lab_async_queue_task_send_email', function ($data) {
+add_action('async_queue_task_send_email', function ($data) {
     wp_mail(
         $data['email'],
         'Hello',
@@ -407,7 +356,7 @@ add_action('lab_async_queue_task_send_email', function ($data) {
 
 // dispatch example:
 /*
-lab_async_dispatch(
+async_dispatch(
     'send_email',
     [
         'email' => 'john@example.com',
@@ -417,7 +366,7 @@ lab_async_dispatch(
 
 // queue dispatch example:
 /*
-lab_async_queue_dispatch(
+async_queue_dispatch(
     'send_email',
     [
         'email' => 'john@example.com',
