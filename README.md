@@ -1,11 +1,14 @@
-=== Async Actions ===
-Contributors: labweb
-Tags: async, background, queue, jobs, cron
-Requires at least: 5.3
-Tested up to: 6.8 < 7.0
-Stable tag: 1.0.0
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+# Async Actions
+
+| Field | Value |
+|---|---|
+| Contributors | labweb |
+| Tags | async, background, queue, jobs, cron |
+| Requires at least | 5.3 |
+| Tested up to | 6.8 |
+| Stable tag | 1.0.0 |
+| License | GPLv2 or later |
+| License URI | https://www.gnu.org/licenses/gpl-2.0.html |
 
 Lightweight background job queue and async task dispatcher for WordPress.
 
