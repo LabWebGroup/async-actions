@@ -1,7 +1,6 @@
 <?php
 /**
  * Plugin Name: Async Actions
- * Plugin URI: https://labweb.digital/
  * Description: Lightweight background job queue and async task dispatcher for WordPress.
  * Version: 1.0.8
  * Author: Labweb
