@@ -8,8 +8,6 @@
  * Author URI: https://labweb.digital/
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: async-actions
- * Domain Path: /languages
  */
 
 /*
@@ -430,32 +428,32 @@ lab_async_queue_dispatch(
 add_action('admin_menu', function () {
 
     add_menu_page(
-        'Lab Async Actions',
-        'Lab Async Actions',
+        'Async Actions',
+        'Async Actions',
         'manage_options',
-        'lab-async-actions',
-        'lab_async_admin_page',
+        'async-actions',
+        'async_admin_page',
         'dashicons-admin-generic',
         80
     );
 
     add_submenu_page(
-        'lab-async-actions',
+        'async-actions',
         'Documentation',
         'Documentation',
         'manage_options',
-        'lab-async-actions-docs',
-        'lab_async_docs_page'
+        'async-actions-docs',
+        'async_docs_page'
     );
 
 });
 
-function lab_async_admin_page()
+function async_admin_page()
 {
     include __DIR__ . '/admin/index.php';
 }
 
-function lab_async_docs_page()
+function async_docs_page()
 {
     include __DIR__ . '/admin/docs.php';
 }

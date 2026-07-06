@@ -1,3 +1,9 @@
+<?php
+
+defined('ABSPATH') || exit;
+
+?>
+
 <style>
     .lat-docs { }
     .lat-docs-layout { display: flex; gap: 40px; align-items: flex-start; margin-top: 8px; }

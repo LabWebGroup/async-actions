@@ -1,11 +1,20 @@
-# async-actions
+=== Async Actions ===
+Contributors: labweb
+Tags: async, background, queue, jobs, cron
+Requires at least: 5.3
+Tested up to: 6.8 < 7.0
+Stable tag: 1.0.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+Lightweight background job queue and async task dispatcher for WordPress.
+
+---
 
 ![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-21759B?logo=wordpress&logoColor=white)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4?logo=php&logoColor=white)
 ![License](https://img.shields.io/badge/License-GPL%20v2%2B-blue)
 ![Version](https://img.shields.io/badge/Version-1.0.0-green)
-
-Lightweight background job queue and async task dispatcher for WordPress.
 
 ## How to Use
 

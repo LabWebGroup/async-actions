@@ -1,5 +1,7 @@
 <?php
 
+defined('ABSPATH') || exit;
+
 /*
 * Example of a task that takes a long time to complete. This task will be executed asynchronously in the background.
 * Two ways to dispatch the task:
@@ -10,13 +12,27 @@
 
 // add_action('lab_async_task_test', function ($data) {
 //     sleep(15); // simulate a long-running task
-//     file_put_contents(__DIR__ . '/email_log.txt', "Email sent to: {$data['email']}\n", FILE_APPEND);
+
+//     $upload_dir = wp_upload_dir();
+//     $log_file = $upload_dir['basedir'] . '/email_log.txt';
+
+//     file_put_contents($log_file, "Email sent to: {$data['email']}\n", FILE_APPEND);
 // }, 10, 1);
 
 
 add_action('lab_async_queue_task_test', function ($data) {
+
     sleep(15); // simulate a long-running task
-    file_put_contents(__DIR__ . '/email_log.txt', "Email sent to: {$data['email']}\n", FILE_APPEND);
+
+    $upload_dir = wp_upload_dir();
+    $log_file = $upload_dir['basedir'] . '/email_log.txt';
+
+    file_put_contents(
+        $log_file,
+        "Email sent to: {$data['email']}\n",
+        FILE_APPEND
+    );
+
 }, 10, 1);
 
 
@@ -26,7 +42,7 @@ add_action('template_redirect', function () {
         return;
     }
 
-    $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+    $path = trim(wp_parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 
     if ($path !== 'lightroom') {
         return;

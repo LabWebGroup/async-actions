@@ -8,7 +8,7 @@ if (!current_user_can('manage_options')) {
 global $wpdb;
 $table     = $wpdb->prefix . 'lab_async_queue';
 $nonce_key = 'lab_async_queue_manage';
-$page_url  = admin_url('admin.php?page=lab-async-tasks');
+$page_url  = admin_url('admin.php?page=async-actions');
 
 // ── Handle POST ────────────────────────────────────────────────────────────────
 if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['lab_async_action'])) {
@@ -88,7 +88,7 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['lab_async_action'])) 
                 } catch (Throwable $e) {
                     $wpdb->update($table, [
                         'status'       => ($job->attempts >= 3) ? 'failed' : 'pending',
-                        'available_at' => date('Y-m-d H:i:s', time() + 30),
+                        'available_at' => gmdate('Y-m-d H:i:s', time() + 30),
                     ], ['id' => $job->id], ['%s', '%s'], ['%d']);
                 }
             }
@@ -177,24 +177,24 @@ $paginate_url = function (int $p) use ($page_url, $filter, $per_page): string {
 $pagination_nav = function () use ($current_page, $total_pages, $filtered_total, $paginate_url): void {
     if ($filtered_total === 0) return;
     $cls = $total_pages <= 1 ? ' one-page' : '';
-    echo "<div class=\"tablenav-pages{$cls}\">";
+    echo "<div class=\"tablenav-pages" . esc_html($cls) . "\">";
     $n = number_format($filtered_total);
     $s = $filtered_total === 1 ? 'item' : 'items';
-    echo "<span class=\"displaying-num\">{$n} {$s}</span>";
+    echo "<span class=\"displaying-num\">" . esc_html($n) . " " . esc_html($s) . "</span>";
     if ($total_pages > 1) {
         echo '<span class="pagination-links">';
         echo $current_page > 1
-            ? '<a class="first-page button" href="' . $paginate_url(1) . '">«</a>'
+            ? '<a class="first-page button" href="' . esc_url($paginate_url(1)) . '">«</a>'
             : '<span class="first-page button disabled" aria-hidden="true">«</span>';
         echo $current_page > 1
-            ? '<a class="prev-page button" href="' . $paginate_url($current_page - 1) . '">‹</a>'
+            ? '<a class="prev-page button" href="' . esc_url($paginate_url($current_page - 1)) . '">‹</a>'
             : '<span class="prev-page button disabled" aria-hidden="true">‹</span>';
-        echo '<span class="paging-input">' . $current_page . ' / <span class="total-pages">' . $total_pages . '</span></span>';
+        echo '<span class="paging-input">' . esc_html($current_page) . ' / <span class="total-pages">' . esc_html($total_pages) . '</span></span>';
         echo $current_page < $total_pages
-            ? '<a class="next-page button" href="' . $paginate_url($current_page + 1) . '">›</a>'
+            ? '<a class="next-page button" href="' . esc_url($paginate_url($current_page + 1)) . '">›</a>'
             : '<span class="next-page button disabled" aria-hidden="true">›</span>';
         echo $current_page < $total_pages
-            ? '<a class="last-page button" href="' . $paginate_url($total_pages) . '">»</a>'
+            ? '<a class="last-page button" href="' . esc_url($paginate_url($total_pages)) . '">»</a>'
             : '<span class="last-page button disabled" aria-hidden="true">»</span>';
         echo '</span>';
     }
@@ -205,10 +205,10 @@ $perpage_form = function () use ($per_page, $filter, $page_url): void {
     $base_args = $filter ? ['status' => $filter] : [];
     $base_url  = esc_attr(add_query_arg($base_args, $page_url));
     echo '<label class="screen-reader-text" for="lat-per-page-sel">Items per page</label>';
-    echo '<select id="lat-per-page-sel" class="lat-perpage-sel" data-baseurl="' . $base_url . '" aria-label="Items per page"';
+    echo '<select id="lat-per-page-sel" class="lat-perpage-sel" data-baseurl="' . esc_html($base_url) . '" aria-label="Items per page"';
     echo ' onchange="window.location.href=this.dataset.baseurl+\'&per_page=\'+this.value">';
     foreach ([10, 20, 50, 100] as $pp) {
-        echo '<option value="' . $pp . '"' . ($per_page === $pp ? ' selected' : '') . '>' . $pp . ' per page</option>';
+        echo '<option value="' . esc_attr($pp) . '"' . ($per_page === $pp ? ' selected' : '') . '>' . esc_html($pp) . ' per page</option>';
     }
     echo '</select>';
 };
@@ -229,7 +229,7 @@ $opt_runtime  = (int)  get_option('lab_async_max_runtime', 20);
 $next_run    = wp_next_scheduled('lab_async_worker');
 $secret      = defined('LAB_ASYNC_SECRET') ? LAB_ASYNC_SECRET : (string) get_option('lab_async_secret', '');
 $proc_url    = rest_url('async-task/v1/process-queue');
-$curl_cmd    = '* * * * * curl -s -o /dev/null -X POST "' . esc_url_raw($proc_url) . '" -H "X-Lab-Async-Secret: ' . $secret . '"';
+$curl_cmd    = '* * * * * curl -s -o /dev/null -X POST "' . esc_url_raw($proc_url) . '" -H "X-Lab-Async-Secret: ' . esc_html($secret) . '"';
 
 $status_meta = [
     'pending'    => ['label' => 'Pending',    'color' => '#ea610c', 'bg' => '#fef3c7'],

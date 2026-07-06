@@ -1,5 +1,8 @@
 <?php
 
+defined('ABSPATH') || exit;
+
+
 function lab_async_setup_db() {
     global $wpdb;
 
