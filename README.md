@@ -1,4 +1,10 @@
 # async-actions
+
+![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-21759B?logo=wordpress&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4?logo=php&logoColor=white)
+![License](https://img.shields.io/badge/License-GPL%20v2%2B-blue)
+![Version](https://img.shields.io/badge/Version-1.0.0-green)
+
 Lightweight background job queue and async task dispatcher for WordPress.
 
 ## How to Use
